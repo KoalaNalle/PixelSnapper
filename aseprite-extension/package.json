@@ -1,0 +1,11 @@
+{
+  "name": "pixel-snapper",
+  "displayName": "Pixel Snapper",
+  "description": "An Aseprite frontend for the Sprite Fusion Pixel Snapper Rust engine. In development: settings dialog only.",
+  "version": "0.1.0-dev.1",
+  "author": { "name": "KoalaNalle", "url": "https://github.com/KoalaNalle" },
+  "publisher": "KoalaNalle",
+  "license": "MIT",
+  "categories": ["Scripts"],
+  "contributes": { "scripts": [{ "path": "./pixel-snapper.lua" }] }
+}

@@ -124,6 +124,18 @@ const recoloredBytes = process_image(inputBytes, null, null, "0f0f1b,ffecd6,ff4d
 
 Pass `null` for any optional argument you want to leave on its default behavior.
 
+## Aseprite Extension
+
+This fork adds an Aseprite frontend for Sprite Fusion Pixel Snapper. Development
+is proceeding in checkpoints. The current `0.1.0-dev.1` source contains a settings
+dialog with Generic, Scaleweave Terrain 64, Scaleweave Feature 64, and Custom
+presets, validation, and persistent preferences. **Image processing and release
+packaging are not connected yet.** The existing Rust CLI and WASM engine remain
+unchanged.
+
+See the [extension README](aseprite-extension/README.md) for current behavior and
+[architecture notes](docs/ASEPRITE_EXTENSION.md) for the next integration steps.
+
 ## Acknowledgments
 
 Pixel Snapper is a [Sprite Fusion](https://www.spritefusion.com/pixel-art-generator) project. Sprite Fusion is a tool to generate TRUE pixel art sprites and animations for game development.
