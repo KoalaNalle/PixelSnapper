@@ -1,5 +1,8 @@
 # Pixel Snapper for Aseprite
 
+[Project overview](../README.md) · [Build and installation](../docs/DEVELOPMENT.md) ·
+[Architecture and verification](../docs/ASEPRITE_EXTENSION.md)
+
 This fork adds an Aseprite frontend for **Sprite Fusion Pixel Snapper**, the
 Rust image-processing engine by **Hugo Duprez**. The engine remains authoritative;
 the extension contains no Lua snapping or palette-quantization algorithm.
@@ -11,7 +14,8 @@ on Windows x64. It includes the command, preset system, validation, and saved
 preferences. **Sizing and masking are not implemented yet.** For now, choose
 Generic / Detected Grid or set Native sizing, Preserve Alpha on, and Hex Mask off.
 Other output combinations show a clear message before export or execution.
-There is no release archive yet; the development setup below supplies the binary.
+The verified setup is a local development installation; archive packaging and
+installation QA remain pending. See the build and installation guide above.
 
 Open a sprite and choose **Sprite > Pixel Snapper...**. The command is disabled
 without an active sprite. **Snap** exports a separate rendered RGBA image of the
@@ -27,8 +31,9 @@ success and handled errors; cleanup failures are reported. A crash or forced
 termination can leave that run's directory behind.
 
 Aseprite may request permission to execute the bundled program and access
-temporary files. Allow the operation to process an image. Denying permission
-stops processing with an error and does not create an output sprite. Processing
+temporary files. Allow the operation to process an image. Permission-denial
+behavior still needs manual QA; the pipeline only creates a sprite after native
+execution and output loading both succeed. Processing
 is synchronous, so Aseprite waits until the engine exits; there is no live preview
 or mid-process Cancel. No network access or runtime download is used.
 
@@ -68,50 +73,33 @@ the preset definition. Selecting Custom keeps the current controls.
   transparent canvas. Crop will center without scaling and pad if smaller.
   This frontend limits target dimensions to 1–10000 pixels per axis.
 - **Preserve Alpha / Pointy Hex Mask:** saved output options; these are not Rust
-  CLI flags and are not applied in this settings-only checkpoint.
+  CLI flags. This native-processing checkpoint preserves alpha and requires
+  the mask to be off; removing alpha and applying the mask are pending.
 
-## Developer checks
-
-Build the engine and put it in the development extension directory:
-
-```powershell
-cargo build --release --locked
-New-Item -ItemType Directory -Force aseprite-extension/bin/windows-x64
-Copy-Item target/release/spritefusion-pixel-snapper.exe aseprite-extension/bin/windows-x64/
-```
-
-For a local development installation, copy the contents of `aseprite-extension/`
-into an Aseprite `extensions/pixel-snapper/` directory, also copy the repository's
-`LICENSE` into that directory, and restart Aseprite. Keep any existing `__pref.lua`
-when updating. The binary directory is generated and gitignored. Packaged end
-users will not need Rust; building and packaging a release comes later.
+## Compatibility and verification
 
 Executable and temporary paths containing spaces, ampersands, and parentheses
 have been tested. Paths containing `%`, `!`, quotes, or control characters are
 rejected before execution because Windows shell expansion can change them. Source
 artwork filenames are never inserted into the shell command.
 
-The settings regression checks use Aseprite's own Lua interpreter without extra
-dependencies. Run from the repository root in PowerShell:
-
-```powershell
-& 'C:\Games\Steam\steamapps\common\Aseprite\Aseprite.exe' --batch --script tests/aseprite-settings.lua
-& 'C:\Games\Steam\steamapps\common\Aseprite\Aseprite.exe' --batch --script tests/aseprite-processing.lua
-```
-
-Change the Aseprite executable path for your installation. The processing suite
-requires the built binary above, or a staged directory supplied with
-`--script-param 'plugin-root=C:\path to extension'` before `--script`.
-It uses generated fixtures and no additional test dependencies. See
-[architecture and verification notes](../docs/ASEPRITE_EXTENSION.md).
+The settings and integration suites passed in Aseprite 1.3.18.5-x64. A GUI run
+using the swamp fixture opened a new unsaved 126 x 122 sprite with crisp pixels
+and transparency after manual permission approval. The original remained open
+at 640 x 640 without a modified-document marker. Tests also check source pixel
+and undo preservation. See the [test fixture](../test_img/README.md),
+[repeatable test commands](../docs/DEVELOPMENT.md#repeat-the-checks), and
+[full verification record](../docs/ASEPRITE_EXTENSION.md).
 
 ## Attribution and license
 
 The original Sprite Fusion Pixel Snapper engine is by Hugo Duprez:
 <https://github.com/Hugo-Dz/spritefusion-pixel-snapper>.
 The Aseprite frontend and presets are additions by KoalaNalle in this fork.
-The new extension code is MIT-licensed. The repository's upstream `LICENSE`,
-including `Copyright (c) 2025 Hugo Duprez`, is unchanged and must accompany
-extension distributions and bundled engine binaries. Engine version `1.0.0`
+The new extension code is MIT-licensed under [LICENSE-EXTENSION](../LICENSE-EXTENSION).
+The repository's upstream [LICENSE](../LICENSE), including
+`Copyright (c) 2025 Hugo Duprez`, is unchanged. Include both license files and
+[THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md) in extension distributions
+that bundle the engine. Engine version `1.0.0`
 at the inspected commit `ae20461f60fb39e75d15f184bab1ebec1219511c` is separate from
 the extension version.

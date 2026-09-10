@@ -3,4 +3,5 @@
 /pkg
 /aseprite-extension/bin/
 /dist/
+/test_img/output/
 .DS_Store

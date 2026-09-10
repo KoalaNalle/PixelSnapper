@@ -1,5 +1,13 @@
 # Aseprite extension architecture
 
+[Project overview](../README.md) · [Controls](../aseprite-extension/README.md) ·
+[Development setup](DEVELOPMENT.md) · [Attribution](../THIRD_PARTY_NOTICES.md)
+
+This document covers the frontend maintained in this fork. The authoritative
+Rust engine remains in `src/`; its original CLI/WASM documentation is preserved
+in the [upstream README](upstream/README.md). Reframing the repository around
+Aseprite does not change the engine, its version, or its copyright notices.
+
 ## Checkpoint status
 
 Implemented: command registration, modal settings dialog, built-in presets,
@@ -105,6 +113,11 @@ The 64 x 64 defaults belong to frontend preset data, not the Rust engine.
 
 ## Native binaries and release follow-up
 
+Manual builds and local installation are described in [DEVELOPMENT.md](DEVELOPMENT.md).
+Packages must carry the upstream `LICENSE`, the fork's `LICENSE-EXTENSION`, and
+`THIRD_PARTY_NOTICES.md`, alongside any required dependency notices. These notices
+identify the upstream engine separately from the frontend additions.
+
 The binary directory scheme is:
 
 ```text
@@ -187,8 +200,42 @@ The last failure cases use a scoped test replacement of `os.execute`; successful
 image-processing cases invoke the real engine. Numeric/palette validation errors
 and pending output settings are also rejected without modifying the source.
 
-GUI verification of the updated Snap button is tracked separately from these
-batch-mode API tests; archive installation remains pending.
+The updated development extension and native binary were copied into the local
+Aseprite extension directory, retaining preferences and the upstream license.
+Installed source/binary files were checked against the working tree/build.
+After restarting Aseprite, the updated Snap button opens normally. Pending output
+settings show a readable, multi-line validation message and leave the source
+unchanged. Selecting Generic restores Native settings and reaches the ordinary
+Aseprite permission prompt for writing the temporary directory.
+
+The initial GUI test paused at that prompt. The following swamp-artwork
+checkpoint completed GUI processing after manual permission approval.
+GUI permission-denial behavior and archive installation remain unverified.
+
+## Swamp artwork checkpoint
+
+A reproducible 640 x 640 transparent swamp hex tile was added under `test_img/`,
+using a 30-degree camera elevation above the terrain plane. Aseprite created
+a direct 64 x 64 nearest-neighbor reduction and exercised the real extension
+processing module with Auto/16 colors and Manual 10/32 colors. Native results
+were 126 x 122 and 67 x 68, respectively. Separate fixture helpers fitted those
+results into 64 x 64 transparent canvases for visual comparison; extension output
+sizing and masking remain pending.
+
+The batch test passed: source pixels/dirty state/undo count were unchanged,
+results were new unsaved sprites, cleanup reported no failures, and all five
+output images preserved transparency with no partially transparent boundary
+pixels. The direct 64 x 64 image matched the Canvas preview pixel for pixel.
+The original input PNG's SHA-256 remained unchanged.
+
+The installed extension's menu and Generic dialog were verified with the swamp
+image in the GUI. After the user approved Aseprite's permissions manually, Snap
+opened a new unsaved `swamp-hex-30deg-640-snapped` sprite at 126 x 122 with one
+editable Snapped layer. Inspection at 400% zoom confirmed crisp pixels and a
+transparent exterior. Switching to the original showed its unchanged 640 x 640
+dimensions and no modified-document marker. The new result was left open for
+review. See [the fixture notes](../test_img/README.md) for exact files, repeat
+instructions, and the distinction between native and resized results.
 
 ## API references
 
