@@ -1,7 +1,26 @@
 -- SPDX-License-Identifier: MIT
 local M = {}
 
-function M.create(plugin, source, presets, settings, onclose)
+local function alert(message)
+  -- Aseprite requires an array for separate alert lines; a string's newlines
+  -- are stripped. Bound the width/height so diagnostics remain usable.
+  local lines = {}
+  for line in tostring(message):gmatch("[^\r\n]+") do
+    while #line > 85 do
+      local cut = line:sub(1,85):match("^.*()%s") or 85
+      lines[#lines+1] = line:sub(1,cut):gsub("%s+$", "")
+      line = line:sub(cut+1):gsub("^%s+", "")
+    end
+    lines[#lines+1] = line
+  end
+  if #lines > 18 then
+    for index = #lines, 19, -1 do lines[index] = nil end
+    lines[19] = "(Additional diagnostic text omitted.)"
+  end
+  app.alert { title = "Pixel Snapper", text = lines }
+end
+
+function M.create(plugin, source, presets, settings, onclose, process)
   local preset_id, initial = settings.restore(plugin.preferences, presets)
   local preset_labels, preset_ids = {}, {}
   for _, preset in ipairs(presets.list()) do
@@ -81,15 +100,26 @@ function M.create(plugin, source, presets, settings, onclose)
   dialog:newrow():separator { text = "SUMMARY" }
   dialog:newrow():label { label = "Input:", text = source.width .. " x " .. source.height .. " / active frame" }
   dialog:newrow():label { id = "target_summary", label = "Output Target:", text = "Native snapped dimensions" }
-  dialog:newrow():label { text = "Development build: settings only. Processing follows next." }
-  dialog:newrow():button { id = "save_settings", text = "Save Settings", focus = true, onclick = function()
+  dialog:newrow():label { id = "status", text = "Development: Native output only; keep alpha on and mask off." }
+  dialog:newrow():button { id = "snap", text = "Snap", focus = true, onclick = function()
     local values, problem = settings.validate(dialog.data, source, presets)
     if not values then
-      app.alert { title = "Pixel Snapper", text = problem }
+      alert(problem)
+      return
+    end
+    dialog:modify { id = "snap", enabled = false }
+    dialog:modify { id = "status", text = "Processing the active frame. Please wait..." }
+    app.refresh()
+    local result, failure, warning = process(values)
+    if not result then
+      dialog:modify { id = "snap", enabled = true }
+      dialog:modify { id = "status", text = "Processing stopped. Review the settings and try again." }
+      alert(failure)
       return
     end
     settings.save(plugin.preferences, preset_id, values)
     dialog:close()
+    if warning then alert(warning) end
   end }
   dialog:button { id = "cancel", text = "Cancel", onclick = function() dialog:close() end }
   refresh()

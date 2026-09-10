@@ -127,11 +127,13 @@ Pass `null` for any optional argument you want to leave on its default behavior.
 ## Aseprite Extension
 
 This fork adds an Aseprite frontend for Sprite Fusion Pixel Snapper. Development
-is proceeding in checkpoints. The current `0.1.0-dev.1` source contains a settings
+is proceeding in checkpoints. The current `0.1.0-dev.2` source contains a settings
 dialog with Generic, Scaleweave Terrain 64, Scaleweave Feature 64, and Custom
-presets, validation, and persistent preferences. **Image processing and release
-packaging are not connected yet.** The existing Rust CLI and WASM engine remain
-unchanged.
+presets, validation, and persistent preferences. Windows x64 can now export the
+active frame, run the native CLI with Auto/Manual pixel size and Auto/current/HEX
+palettes, and open an unsaved RGBA result without changing the source sprite.
+**This checkpoint supports Native output only; resizing, masking, and release
+packaging are pending.** The existing Rust CLI and WASM engine remain unchanged.
 
 See the [extension README](aseprite-extension/README.md) for current behavior and
 [architecture notes](docs/ASEPRITE_EXTENSION.md) for the next integration steps.

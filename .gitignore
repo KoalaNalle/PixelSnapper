@@ -1,4 +1,6 @@
 /target
 /samples
 /pkg
+/aseprite-extension/bin/
+/dist/
 .DS_Store

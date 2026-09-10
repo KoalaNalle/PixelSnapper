@@ -151,7 +151,8 @@ test("input bounds are checked before processing", function()
 end)
 
 test("all extension Lua files parse in Aseprite", function()
-  for _, filename in ipairs({ "pixel-snapper.lua", "lib/presets.lua", "lib/settings.lua", "lib/dialog.lua" }) do
+  for _, filename in ipairs({ "pixel-snapper.lua", "lib/presets.lua", "lib/settings.lua", "lib/dialog.lua",
+    "lib/palette.lua", "lib/runner.lua", "lib/processing.lua" }) do
     assert(loadfile(app.fs.joinPath(extension, filename)))
   end
 end)

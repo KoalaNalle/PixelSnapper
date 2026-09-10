@@ -9,6 +9,9 @@ function init(plugin)
   local presets = module("presets")
   local settings = module("settings")
   local ui = module("dialog")
+  local processing = module("processing")
+  local dependencies = { presets = presets, settings = settings,
+    runner = module("runner"), palette = module("palette") }
 
   plugin:newCommand {
     id = "PixelSnapper",
@@ -21,7 +24,10 @@ function init(plugin)
     onclick = function()
       local source = app.activeSprite
       if not source or not app.isUIAvailable or active_dialog then return end
-      active_dialog = ui.create(plugin, source, presets, settings, function() active_dialog = nil end)
+      local frame_number = app.activeFrame.frameNumber
+      active_dialog = ui.create(plugin, source, presets, settings,
+        function() active_dialog = nil end,
+        function(values) return processing.run(plugin, source, frame_number, values, dependencies) end)
       if active_dialog then active_dialog:show { wait = true, autoscrollbars = true } end
     end,
   }
