@@ -30,10 +30,6 @@ function M.run(plugin, source, frame_number, values, dependencies)
   local ok, problem = pcall(function()
     local clean, validation = dependencies.settings.validate(values, source, dependencies.presets)
     if not clean then error(validation, 0) end
-    -- Remove this checkpoint gate when extension-side output processing lands.
-    if clean.sizing_mode ~= "Native" or clean.hex_mask or not clean.preserve_alpha then
-      error("This development checkpoint supports Native sizing with Preserve Alpha on\nand Pointy Hex Mask off. Choose Generic / Detected Grid, or adjust those settings.\nResizing and masking follow in the next checkpoint.", 0)
-    end
     local executable, missing = runner.resolve(plugin.path)
     if not executable then error(missing, 0) end
     local palette_hex, palette_problem = dependencies.palette.resolve(source, frame_number, clean, dependencies.settings)
@@ -49,6 +45,7 @@ function M.run(plugin, source, frame_number, values, dependencies)
     if not image or image.colorMode ~= ColorMode.RGB then
       error("Pixel Snapper did not produce a readable RGBA PNG.", 0)
     end
+    image = dependencies.output.apply(image, clean, dependencies.geometry)
     result = M.new_sprite(image, source)
   end)
   local cleanup_warning = runner.cleanup(files)

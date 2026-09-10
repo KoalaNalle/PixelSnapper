@@ -41,6 +41,7 @@ function M.create(plugin, source, presets, settings, onclose, process)
     dialog:modify { id = "custom_palette", enabled = data.palette_mode == "Custom HEX Palette" }
     dialog:modify { id = "width", enabled = data.sizing_mode ~= "Native" }
     dialog:modify { id = "height", enabled = data.sizing_mode ~= "Native" }
+    dialog:modify { id = "background", enabled = not data.preserve_alpha }
     local descriptions = {
       Native = "Use the native snapped dimensions.",
       Exact = "Nearest-neighbor resize; may change aspect ratio.",
@@ -66,6 +67,8 @@ function M.create(plugin, source, presets, settings, onclose, process)
         dialog:modify { id = field.id, option = values[field.id] }
       elseif field.kind == "boolean" then
         dialog:modify { id = field.id, selected = values[field.id] }
+      elseif field.kind == "color" then
+        dialog:modify { id = field.id, color = settings.color(values[field.id]) }
       else
         dialog:modify { id = field.id, text = tostring(values[field.id]) }
       end
@@ -86,6 +89,8 @@ function M.create(plugin, source, presets, settings, onclose, process)
     elseif field.kind == "boolean" then
       dialog:check { id = field.id, label = field.label, text = field.text,
         selected = initial[field.id], onclick = refresh }
+    elseif field.kind == "color" then
+      dialog:color { id = field.id, label = field.label, color = settings.color(initial[field.id]), onchange = refresh }
     else
       -- Entries retain invalid text for validation instead of silently rounding it.
       dialog:entry { id = field.id, label = field.label,
@@ -100,7 +105,7 @@ function M.create(plugin, source, presets, settings, onclose, process)
   dialog:newrow():separator { text = "SUMMARY" }
   dialog:newrow():label { label = "Input:", text = source.width .. " x " .. source.height .. " / active frame" }
   dialog:newrow():label { id = "target_summary", label = "Output Target:", text = "Native snapped dimensions" }
-  dialog:newrow():label { id = "status", text = "Development: Native output only; keep alpha on and mask off." }
+  dialog:newrow():label { id = "status", text = "Snapping, then output sizing and optional mask." }
   dialog:newrow():button { id = "snap", text = "Snap", focus = true, onclick = function()
     local values, problem = settings.validate(dialog.data, source, presets)
     if not values then

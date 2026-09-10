@@ -2,6 +2,7 @@
 local root = app.params["source-root"] or app.fs.currentPath
 local extension = app.fs.joinPath(root, "aseprite-extension")
 local presets = dofile(app.fs.joinPath(extension, "lib", "presets.lua"))
+presets.configure(extension)
 local settings = dofile(app.fs.joinPath(extension, "lib", "settings.lua"))
 local source = { width = 128, height = 96 }
 local count = 0
@@ -150,9 +151,39 @@ test("input bounds are checked before processing", function()
   assert(settings.validate(values, {width=10001, height=64}, presets) == nil)
 end)
 
+test("background RGB validation and persistence stay primitive", function()
+  local values=presets.defaults("generic")
+  values.preserve_alpha=false
+  values.background=Color{r=17,g=34,b=51,a=128}
+  local clean=valid(values)
+  assert(clean.background=="112233")
+  local preferences={}
+  settings.save(preferences,"custom",clean)
+  local id,restored=settings.restore(preferences,presets)
+  assert(id=="custom" and restored.background=="112233" and not restored.preserve_alpha)
+  values.background="11223344"
+  invalid(values,"Background RGB")
+  values.preserve_alpha=true
+  assert(valid(values).background=="ffffff")
+end)
+
+test("shipping profile omits development presets and restores their saved values safely",function()
+  local preferences={}
+  local values=presets.defaults("scaleweave-terrain-64")
+  values.width=96
+  settings.save(preferences,"scaleweave-terrain-64",values)
+  presets.configure(app.fs.joinPath(root,"target","absent-profile"))
+  assert(#presets.list()==2 and not presets.find("scaleweave-terrain-64"))
+  local id,restored=settings.restore(preferences,presets)
+  assert(id=="generic" and restored.width==96 and restored.hex_mask)
+  assert(settings.customized(id,restored,presets))
+  presets.configure(extension)
+  assert(#presets.list()==4)
+end)
+
 test("all extension Lua files parse in Aseprite", function()
   for _, filename in ipairs({ "pixel-snapper.lua", "lib/presets.lua", "lib/settings.lua", "lib/dialog.lua",
-    "lib/palette.lua", "lib/runner.lua", "lib/processing.lua" }) do
+    "lib/palette.lua", "lib/runner.lua", "lib/processing.lua", "lib/output.lua", "lib/geometry.lua", "lib/presets-development.lua" }) do
     assert(loadfile(app.fs.joinPath(extension, filename)))
   end
 end)

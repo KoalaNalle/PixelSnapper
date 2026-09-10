@@ -12,6 +12,7 @@ M.fields = {
   { id = "width", label = "Width:", kind = "integer", max = 10000 },
   { id = "height", label = "Height:", kind = "integer", max = 10000 },
   { id = "preserve_alpha", label = "Preserve Alpha:", kind = "boolean", text = "Keep transparency" },
+  { id = "background", label = "Background RGB:", kind = "color" },
   { id = "hex_mask", label = "Pointy Hex Mask:", kind = "boolean", text = "Transparent outside hex" },
   { id = "output_mode", label = "Output:", kind = "choice", options = { "New Sprite" } },
 }
@@ -69,7 +70,21 @@ local function valid_field(field, value)
     if type(value) == "boolean" then return value end
   elseif field.kind == "text" then
     if type(value) == "string" then return value end
+  elseif field.kind == "color" then
+    return M.color_hex(value)
   end
+end
+
+function M.color_hex(value)
+  if type(value) == "string" then return value:match("^%x%x%x%x%x%x$") and value:lower() end
+  if type(value) == "userdata" then
+    local ok, hex = pcall(function() return string.format("%02x%02x%02x",value.red,value.green,value.blue) end)
+    if ok and hex:match("^%x%x%x%x%x%x$") then return hex end
+  end
+end
+
+function M.color(hex)
+  return Color{r=tonumber(hex:sub(1,2),16),g=tonumber(hex:sub(3,4),16),b=tonumber(hex:sub(5,6),16),a=255}
 end
 
 function M.restore(preferences, presets)
@@ -101,6 +116,7 @@ function M.customized(preset_id, values, presets)
   for _, field in ipairs(M.fields) do
     local value = values[field.id]
     if field.kind == "integer" then value = M.integer(value) end
+    if field.kind == "color" then value = M.color_hex(value) end
     if value ~= defaults[field.id] then return true end
   end
   return false
@@ -116,6 +132,7 @@ function M.validate(values, source, presets)
     local value = valid_field(field, values[field.id])
     local inactive = (field.id == "manual_pixel_size" and values.pixel_size_mode ~= "Manual")
       or ((field.id == "width" or field.id == "height") and values.sizing_mode == "Native")
+      or (field.id == "background" and values.preserve_alpha)
     if value ~= nil then
       clean[field.id] = value
     elseif not inactive then

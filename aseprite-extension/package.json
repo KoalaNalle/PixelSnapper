@@ -1,8 +1,8 @@
 {
   "name": "pixel-snapper",
   "displayName": "Pixel Snapper",
-  "description": "An Aseprite frontend for the Sprite Fusion Pixel Snapper Rust engine. Development build: native-size processing.",
-  "version": "0.1.0-dev.2",
+  "description": "Pixel-grid snapping with the Sprite Fusion Rust engine, crisp output sizing, palettes, and optional transparent hex masking.",
+  "version": "0.1.0",
   "author": { "name": "KoalaNalle", "url": "https://github.com/KoalaNalle" },
   "publisher": "KoalaNalle",
   "license": "MIT",

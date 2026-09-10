@@ -3,8 +3,9 @@ local root = app.params["source-root"] or app.fs.currentPath
 local extension = app.fs.joinPath(root, "aseprite-extension")
 local function module(name) return dofile(app.fs.joinPath(extension, "lib", name .. ".lua")) end
 local deps = { presets = module("presets"), settings = module("settings"),
-  palette = module("palette"), runner = module("runner") }
+  palette = module("palette"), runner = module("runner"), output = module("output"), geometry = module("geometry") }
 local processing = module("processing")
+deps.presets.configure(extension)
 local plugin = { path = app.params["plugin-root"] or extension }
 local count = 0
 local function test(name, run)
@@ -210,6 +211,7 @@ test("validation failures create no output and leave source unchanged", function
   local before = snapshot(source)
   local document_count = #app.sprites
   for _,values in ipairs({deps.presets.defaults("scaleweave-terrain-64"), deps.presets.defaults("generic")}) do
+    if values.sizing_mode ~= "Native" then values.width = 0 end
     if values.sizing_mode == "Native" then values.manual_pixel_size="1.5"; values.pixel_size_mode="Manual" end
     local result,problem = processing.run(plugin,source,1,values,deps)
     assert(not result and problem and #app.sprites==document_count)
@@ -243,6 +245,46 @@ test("successful exit without output and failure with output cannot open bogus s
   assert(not deps.runner.cleanup(files))
   source:close()
   assert(ok,problem)
+end)
+
+test("every sizing mode runs after the CLI without changing its arguments or source", function()
+  local source = fixture()
+  local native = run(source)
+  local native_image = native.cels[1].image
+  local files = {input="C:\\Temp Dir\\input.png", output="C:\\Temp Dir\\output.png", log="C:\\Temp Dir\\process.log"}
+  local values = deps.presets.defaults("generic")
+  local command = deps.runner.command("C:\\Engine\\engine.exe",files,values)
+  for _, mode in ipairs({"Exact", "Fit + Pad", "Crop"}) do
+    values.sizing_mode, values.width, values.height = mode, 23, 17
+    assert(deps.runner.command("C:\\Engine\\engine.exe",files,values) == command)
+    local result = run(source,values)
+    assert(result.width==23 and result.height==17)
+    assert(result.cels[1].image.bytes==deps.output.apply(native_image,values).bytes)
+    result:close()
+  end
+  local feature = run(source,deps.presets.defaults("scaleweave-feature-64"))
+  assert(feature.width==64 and feature.height==64)
+  local terrain = run(source,deps.presets.defaults("scaleweave-terrain-64"))
+  assert(terrain.width==64 and terrain.height==64)
+  assert(pc.rgbaA(terrain.cels[1].image:getPixel(0,0))==0)
+  values.hex_mask, values.preserve_alpha, values.background = true, false, "123456"
+  local flattened = run(source,values)
+  assert(pc.rgbaA(flattened.cels[1].image:getPixel(0,0))==0)
+  assert(pc.rgbaA(flattened.cels[1].image:getPixel(11,8))==255)
+  flattened:close(); terrain:close(); feature:close(); native:close(); source:close()
+end)
+
+test("output-stage failure cleans files and opens no document", function()
+  local source = fixture()
+  local before, document_count = snapshot(source), #app.sprites
+  local failing = {}
+  for key,value in pairs(deps) do failing[key]=value end
+  failing.output = {apply=function() error("Simulated output sizing failure") end}
+  local result,problem = processing.run(plugin,source,1,deps.presets.defaults("generic"),failing)
+  assert(not result and problem:find("Simulated output sizing failure",1,true))
+  assert(#app.sprites==document_count and app.activeSprite==source)
+  unchanged(source,before)
+  source:close()
 end)
 
 test("all run directories were cleaned after success and failure", function()

@@ -12,29 +12,18 @@ local base = {
   width = 64,
   height = 64,
   preserve_alpha = true,
+  background = "ffffff",
   hex_mask = false,
   output_mode = "New Sprite",
 }
 
 -- Add built-ins here. IDs are persistent; labels can change independently.
-local definitions = {
+local builtins = {
   {
     id = "generic",
     label = "Generic / Detected Grid",
     description = "Upstream defaults; keep the native snapped dimensions.",
     values = {},
-  },
-  {
-    id = "scaleweave-terrain-64",
-    label = "Scaleweave Terrain 64",
-    description = "Centered terrain with a transparent pointy-top hex mask.",
-    values = { color_count = 32, sizing_mode = "Fit + Pad", hex_mask = true },
-  },
-  {
-    id = "scaleweave-feature-64",
-    label = "Scaleweave Feature 64",
-    description = "Centered overlay art with transparency and no hex mask.",
-    values = { color_count = 32, sizing_mode = "Fit + Pad" },
   },
   {
     id = "custom",
@@ -43,6 +32,17 @@ local definitions = {
     custom = true,
   },
 }
+local definitions = builtins
+
+function M.configure(plugin_path)
+  -- Reset first so switching between development and packaged profiles is safe.
+  definitions = {}
+  for _, preset in ipairs(builtins) do definitions[#definitions + 1] = preset end
+  local path = app.fs.joinPath(plugin_path, "lib", "presets-development.lua")
+  if app.fs.isFile(path) then
+    for _, preset in ipairs(dofile(path)) do table.insert(definitions, #definitions, preset) end
+  end
+end
 
 local function copy(values)
   local result = {}

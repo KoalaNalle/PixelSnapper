@@ -5,10 +5,11 @@ local path = app.fs.joinPath
 local directory = path(root,"test_img")
 local output = path(directory,"output")
 app.fs.makeAllDirectories(output)
-local extension = path(root,"aseprite-extension")
+local extension = app.params["plugin-root"] or path(root,"aseprite-extension")
 local function module(name) return dofile(path(extension,"lib",name..".lua")) end
 local processing = module("processing")
-local dependencies = {presets=module("presets"),settings=module("settings"),palette=module("palette"),runner=module("runner")}
+local dependencies = {presets=module("presets"),settings=module("settings"),palette=module("palette"),runner=module("runner"),output=module("output"),geometry=module("geometry")}
+dependencies.presets.configure(extension)
 local source = Sprite{fromFile=path(directory,"input","swamp-hex-30deg-640.png")}
 assert(source.width==640 and source.height==640 and source.colorMode==ColorMode.RGB)
 local source_bytes=source.cels[1].image.bytes
@@ -32,20 +33,6 @@ local direct=Image(source.cels[1].image)
 direct:resize(64,64) -- Verified Aseprite default: nearest-neighbor.
 save(direct,"swamp-hex-30deg-64.png")
 
--- This fixture helper makes review images separately from the extension's
--- still-pending output settings. It preserves the native result's aspect ratio.
-local function fit64(image)
-  local copy=Image(image)
-  local scale=math.min(64/image.width,64/image.height)
-  local width=math.max(1,math.floor(image.width*scale+0.5))
-  local height=math.max(1,math.floor(image.height*scale+0.5))
-  copy:resize(width,height)
-  local canvas=Image(64,64,ColorMode.RGB)
-  canvas:clear()
-  canvas:drawImage(copy,Point(math.floor((64-width)/2),math.floor((64-height)/2)))
-  return canvas
-end
-
 for _,mode in ipairs({"auto","manual10"}) do
   local values=dependencies.presets.defaults("generic")
   if mode=="manual10" then
@@ -60,8 +47,15 @@ for _,mode in ipairs({"auto","manual10"}) do
   assert(source.cels[1].image.bytes==source_bytes and source.undoHistory.undoSteps==source_undo and source.isModified==source_modified)
   local image=result.cels[1].image
   save(image,"swamp-snapped-"..mode.."-native.png")
-  save(fit64(image),"swamp-snapped-"..mode.."-64.png")
   result:close()
+  values.sizing_mode,values.width,values.height="Fit + Pad",64,64
+  local sized,sizing_problem,sizing_warning=processing.run({path=extension},source,1,values,dependencies)
+  assert(sized,sizing_problem)
+  assert(not sizing_warning,sizing_warning)
+  assert(sized.width==64 and sized.height==64 and not sized.hasAssociatedFile and sized.isModified)
+  assert(source.cels[1].image.bytes==source_bytes and source.undoHistory.undoSteps==source_undo and source.isModified==source_modified)
+  save(sized.cels[1].image,"swamp-snapped-"..mode.."-64.png")
+  sized:close()
 end
 source:close()
 print("SWAMP_ASEPRITE_TEST_OK: source unchanged; Native results unsaved; temporary files cleaned")

@@ -26,18 +26,20 @@ size guides the adaptive grid; it does not promise an exact output size. Auto
 and Manual examples also use different color counts and are not a controlled
 comparison of pixel-size modes alone.
 
-The 64 x 64 fit/pad images are made by the **test helper** after native snapping.
-Output sizing and hex masking in the extension itself remain a later checkpoint.
+The snapped 64 x 64 images now run through the extension's complete **Fit + Pad**
+pipeline in `0.1.0`. The original dev.2 check used a separate sizing helper;
+that duplicate implementation has been removed. Optional hex masking is verified
+separately by the pixel-level output and full integration tests.
 All image files have a transparent exterior; checkerboards appear only in the
 comparison view. Generated outputs and logs are gitignored.
 
 ## Repeat the Aseprite test
 
-From the repository root, after building the engine and placing the development
-binary in `aseprite-extension/bin/windows-x64/`:
+From the repository root, after running `scripts/build-extension.ps1`, use the
+absolute path to the staged shipping extension:
 
 ```powershell
-& 'C:\Games\Steam\steamapps\common\Aseprite\Aseprite.exe' --batch --script test_img/run-aseprite.lua
+& 'C:\path\to\Aseprite.exe' --batch --script-param 'plugin-root=C:\path\to\PixelSnapper\dist\stage-shipping' --script test_img/run-aseprite.lua | Out-Host
 ```
 
 Adjust the Aseprite executable path for another installation. The checked-in
@@ -49,7 +51,7 @@ that source pixel bytes, dirty state, and undo count remain unchanged; results
 are new unsaved documents; cleanup reports no failures; and every saved output
 contains both visible pixels and transparency, with alpha restricted to 0/255.
 
-Verified on Windows with **Aseprite 1.3.18.5-x64** and extension **0.1.0-dev.2**.
+Originally verified on Windows with **Aseprite 1.3.18.5-x64** and extension **0.1.0-dev.2**.
 The batch test passed. The direct 64 x 64 PNG also matched the Canvas preview
 pixel for pixel. The source PNG SHA-256 before and after testing was:
 
@@ -57,7 +59,7 @@ pixel for pixel. The source PNG SHA-256 before and after testing was:
 F6D3344AAD89D40FF2B78058B1A61053E1BD1C62C9900BF1C452FB92EDA3B94E
 ```
 
-The installed extension was opened through **Sprite > Pixel Snapper...** with
+In the dev.2 GUI check, the installed extension was opened through **Sprite > Pixel Snapper...** with
 this source image. Its dialog correctly showed Generic, 16 colors, Auto grid,
 Auto palette, Native output, alpha on, and mask off. Clicking Snap reached the
 ordinary Aseprite temporary-directory write permission prompt. After the user

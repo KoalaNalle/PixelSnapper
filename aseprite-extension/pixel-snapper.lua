@@ -7,11 +7,12 @@ function init(plugin)
     return dofile(app.fs.joinPath(plugin.path, "lib", name .. ".lua"))
   end
   local presets = module("presets")
+  presets.configure(plugin.path)
   local settings = module("settings")
   local ui = module("dialog")
   local processing = module("processing")
   local dependencies = { presets = presets, settings = settings,
-    runner = module("runner"), palette = module("palette") }
+    runner = module("runner"), palette = module("palette"), output = module("output"), geometry = module("geometry") }
 
   plugin:newCommand {
     id = "PixelSnapper",
